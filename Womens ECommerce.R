@@ -13,6 +13,16 @@ if (!require(readr))
   install.packages("readr")
 library(readr)
 
+# Se agrego para poder realizar %<%
+if (!require(dplyr))
+  install.packages("dplyr")
+library(dplyr)
+# Se agrego para poder realizar corrplot
+if (!require(corrplot))
+  install.packages("corrplot")
+library(corrplot)
+
+
 # Carga de los datos en un data set llamado "reviews"
 # Si cargamos los datos con esta sentencia "Text" y "Review Text", " Division Name", 
 # "Department Name" y "Class Name" estan en tipo Factor con la cantidad de niveles 
@@ -85,7 +95,7 @@ reviews$Recommended.IND <- as.factor(reviews$Recommended.IND)
 # Para la variable Rating, tenemos que categorizar, sabemos que:
 # [0-2] - no recomienda
 # [4-5] - recomienda
-# ver [3] segun la media de si con[3] recomienda o no
+# ver [3] segun la media de si con [3] recomienda o no
 
 i <- 1
 cuantosRecomiendan <- 0
@@ -100,8 +110,56 @@ Rating3 <- sum(reviews$Rating == 3)
 # menos de la mitad.... ver que tomamos tiran mas a no recomendar pero esta
 # ajustado
 
+reviews$recomienda[reviews$Rating <= 2] <- 0
+# ver como se determina el valor 3 por ahora esta para "recomendar"
+reviews$recomienda[reviews$Rating >= 3] <- 1
+
 ##################################################################################
 #######################          Parte 2      ####################################
 ##################################################################################
 ############## Estadistica Descriptiva
 summary(reviews)
+
+factores <- reviews %>%  select_if(is.factor)
+names(factores)
+noFactores <- reviews[,!names(reviews) %in% names(factores)]
+noFactores$X <- NULL
+noFactores$Clothing.ID <- NULL
+noFactores$Title <- NULL
+noFactores$Review.Text <- NULL
+noFactores$recomiend <- NULL
+names(noFactores)
+
+reviews$Recommended.IND <- as.numeric(reviews$Recommended.IND)
+cor(reviews[, names(reviews) %in% names(noFactores)],reviews$Recommended.IND)
+
+# No se ven los nombres de los departamentos o clases
+# los transforma como numero
+reviews$Department.Name <- as.numeric(reviews$Department.Name)
+boxplot(reviews$Department.Name ~ reviews$Recommended.IND, data = reviews, xlab = "Recomienda", ylab ="Nombres de Secciones")
+
+reviews$Class.Name <- as.numeric(reviews$Class.Name)
+boxplot(reviews$Class.Name ~ reviews$Recommended.IND, data = reviews, xlab = "Recomienda", ylab ="Clases de las prendas")
+
+# Descriptivos
+mean <- sapply(noFactores, mean)
+sd <- sapply(noFactores, sd)
+median <- sapply(noFactores, median)
+max <- sapply(noFactores, max)
+Nas <- colSums(is.na(noFactores))
+q1 <- t(sapply(noFactores, quantile)) #Cuantil Q1
+estadisticosNoFactores <- round(cbind(mean, median, sd, max, Nas, q1),digits=1)
+estadisticosNoFactores
+
+# Histogramas
+summary(noFactores[,1])
+hist(noFactores[,1])
+hist(noFactores[,1], 
+     main="Histograma de la edad de los comentarios", 
+     xlab="Edad", 
+     border="blue", 
+     col="green",
+     xlim=c(17,99), # en un entorno de 17 a 99
+     las=1, 
+     breaks=25)
+# Este ploteo abarca de 17 a 99 que es la edad minima y maxima 
